@@ -22,9 +22,10 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).send('OK');
 });
 
-app.post('/api/speech', upload.single('audio'), async (req: Request, res: Response) => {
+app.post('/api/speech', upload.single('audio'), async (req: Request, res: Response): Promise<void> => {
   if (!req.file) {
-    return res.status(400).send('No file uploaded.');
+    res.status(400).send('No file uploaded.');
+    return;
   }
 
   try {
@@ -75,11 +76,12 @@ app.post('/api/speech', upload.single('audio'), async (req: Request, res: Respon
   }
 });
 
-app.post('/api/chat', async (req: Request, res: Response) => {
+app.post('/api/chat', async (req: Request, res: Response): Promise<void> => {
   const { newMessage, history, contextDocument } = req.body;
 
   if (!newMessage || !history || !contextDocument) {
-    return res.status(400).send('Missing required fields.');
+    res.status(400).send('Missing required fields.');
+    return;
   }
 
   try {
