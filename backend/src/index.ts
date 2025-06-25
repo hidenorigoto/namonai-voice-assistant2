@@ -26,21 +26,47 @@ app.post('/api/speech', upload.single('audio'), async (req: Request, res: Respon
   }
 
   try {
-    const formData = new FormData();
-    formData.append('file', req.file.buffer, {
+    // Step 1: Transcribe audio to text
+    const audioFormData = new FormData();
+    audioFormData.append('file', req.file.buffer, {
       filename: req.file.originalname,
       contentType: req.file.mimetype,
     });
-    formData.append('model', 'whisper-1');
+    audioFormData.append('model', 'whisper-1');
 
-    const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+    const transcriptionResponse = await axios.post('https://api.openai.com/v1/audio/transcriptions', audioFormData, {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        ...formData.getHeaders(),
+        ...audioFormData.getHeaders(),
       },
     });
 
-    res.status(200).json({ transcription: response.data.text });
+    const topic = transcriptionResponse.data.text;
+
+    // Step 2: Investigate the topic and generate Markdown
+    const investigationResponse = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a research assistant. Your task is to investigate the given topic and generate a structured Markdown document that provides a solid foundation for a deep discussion. The document should include a summary, key points, historical context, and potential questions or viewpoints. Use clear headings for each section.'
+        },
+        {
+          role: 'user',
+          content: `Please investigate the following topic: ${topic}`
+        }
+      ]
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const markdownContent = investigationResponse.data.choices[0].message.content;
+
+    res.status(200).json({ markdown: markdownContent });
+
   } catch (error) {
     console.error('Error with OpenAI API:', error);
     res.status(500).send('Error processing audio.');
