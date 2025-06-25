@@ -11,10 +11,12 @@ interface Message {
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [investigationResult, setInvestigationResult] = useState<string | null>(null);
   const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handleStartRecording = async () => {
     try {
@@ -51,16 +53,15 @@ export default function Home() {
         body: formData,
       });
       const transcriptionData = await transcriptionResponse.json();
-      const userMessageContent = transcriptionData.markdown; // Assuming the same key for now
+      const userMessageContent = transcriptionData.markdown;
 
       const userMessage: Message = { role: 'user', content: userMessageContent };
-      setConversationHistory(prev => [...prev, userMessage]);
+      const currentHistory = [...conversationHistory, userMessage];
+      setConversationHistory(currentHistory);
 
       // If it's the first message, get the investigation document
       if (!investigationResult) {
         setInvestigationResult(userMessageContent);
-        // In a real scenario, the investigation would be a separate step.
-        // For now, we'll just use the transcribed text as the investigation result.
       } else {
         // For subsequent messages, call the chat endpoint
         const chatResponse = await fetch('http://localhost:3001/api/chat', {
@@ -70,13 +71,22 @@ export default function Home() {
           },
           body: JSON.stringify({
             newMessage: userMessage,
-            history: conversationHistory,
+            history: conversationHistory, // Send history before the new user message
             contextDocument: investigationResult,
           }),
         });
-        const chatData = await chatResponse.json();
-        const assistantMessage: Message = { role: 'assistant', content: chatData.response };
-        setConversationHistory(prev => [...prev, assistantMessage]);
+
+        const audioBlob = await chatResponse.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.play();
+          setIsPlaying(true);
+          audioRef.current.onended = () => setIsPlaying(false);
+        }
+        // We don't have the text of the assistant's message, so we can't add it to history yet.
+        // This would be a good improvement for a future step.
       }
 
     } catch (error) {
@@ -94,10 +104,10 @@ export default function Home() {
         <div className="space-x-4 text-center mb-4">
           <button
             onClick={handleStartRecording}
-            disabled={isRecording}
+            disabled={isRecording || isPlaying}
             className="px-6 py-3 bg-blue-500 text-white rounded-md disabled:bg-gray-400"
           >
-            Start Recording
+            {isRecording ? 'Recording...' : 'Start Recording'}
           </button>
           <button
             onClick={handleStopRecording}
@@ -106,6 +116,8 @@ export default function Home() {
           >
             Stop Recording
           </button>
+          {isPlaying && <p className="text-lg mt-2">Playing AI response...</p>}
+          <audio ref={audioRef} className="hidden" />
         </div>
         <div className="flex gap-4">
           {investigationResult && (
