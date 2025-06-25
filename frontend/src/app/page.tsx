@@ -50,6 +50,21 @@ export default function Home() {
             Read our docs
           </a>
         </div>
+        <div>
+          <button onClick={async () => {
+            try {
+              const response = await fetch('http://localhost:3001/health');
+              const data = await response.text();
+              console.log(data);
+              alert('Health check successful: ' + data);
+            } catch (error) {
+              console.error(error);
+              alert('Health check failed!');
+            }
+          }}>
+            Test Backend Connection
+          </button>
+        </div>
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
         <a
