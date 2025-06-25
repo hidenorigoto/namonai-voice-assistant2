@@ -92,7 +92,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       newMessage
     ];
 
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+    const chatResponse = await axios.post('https://api.openai.com/v1/chat/completions', {
       model: 'gpt-4o',
       messages: messages
     }, {
@@ -102,8 +102,21 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       }
     });
 
-    const aiResponse = response.data.choices[0].message.content;
-    res.status(200).json({ response: aiResponse });
+    const aiResponseText = chatResponse.data.choices[0].message.content;
+
+    const ttsResponse = await axios.post('https://api.openai.com/v1/audio/speech', {
+      model: 'tts-1',
+      input: aiResponseText,
+      voice: 'alloy'
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      responseType: 'stream'
+    });
+
+    res.setHeader('Content-Type', 'audio/mpeg');
+    ttsResponse.data.pipe(res);
 
   } catch (error) {
     console.error('Error with OpenAI API:', error);
