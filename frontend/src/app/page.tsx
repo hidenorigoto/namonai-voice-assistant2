@@ -98,8 +98,8 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-100 p-4">
-      <h1 className="text-4xl font-bold mb-8">Voice Discussion PoC</h1>
+    <div className="flex flex-col items-center min-h-screen bg-gray-50 p-4">
+      <h1 className="text-4xl font-bold mb-8 text-gray-800">Voice Discussion PoC</h1>
       <div className="w-full max-w-4xl">
         <div className="space-x-4 text-center mb-4">
           <button
@@ -116,26 +116,29 @@ export default function Home() {
           >
             Stop Recording
           </button>
-          {isPlaying && <p className="text-lg mt-2">Playing AI response...</p>}
+          {isPlaying && <p className="text-lg mt-2 text-gray-700">Playing AI response...</p>}
           <audio ref={audioRef} className="hidden" />
         </div>
         <div className="flex gap-4">
           {investigationResult && (
-            <div className="w-1/2 p-6 bg-white rounded-md shadow-md">
-              <h2 className="text-2xl font-semibold mb-4">Investigation Results:</h2>
-              <article className="prose lg:prose-xl">
+            <div className="w-1/2 p-6 bg-white rounded-md shadow-md border border-gray-200">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-800">Investigation Results:</h2>
+              <article className="prose lg:prose-xl prose-gray max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {investigationResult}
                 </ReactMarkdown>
               </article>
             </div>
           )}
-          <div className={`w-${investigationResult ? '1/2' : 'full'} p-6 bg-white rounded-md shadow-md`}>
-            <h2 className="text-2xl font-semibold mb-4">Conversation:</h2>
+          <div className={`w-${investigationResult ? '1/2' : 'full'} p-6 bg-white rounded-md shadow-md border border-gray-200`}>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Conversation:</h2>
             <div className="space-y-4">
               {conversationHistory.map((msg, index) => (
-                <div key={index} className={`p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-100 text-right' : 'bg-gray-200'}`}>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <div key={index} className={`p-3 rounded-lg conversation-message ${msg.role === 'user' ? 'bg-blue-50 text-right border border-blue-200' : 'bg-gray-100 border border-gray-300'}`}>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    className="prose prose-sm max-w-none"
+                  >
                     {msg.content}
                   </ReactMarkdown>
                 </div>
