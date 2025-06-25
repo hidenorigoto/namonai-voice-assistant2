@@ -10,11 +10,13 @@ dotenv.config();
 const app = express();
 const port = 3001;
 
+// Middlewares
+app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(express.json());
+
 // Multer setup for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-
-app.use(cors({ origin: 'http://localhost:3000' }));
 
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).send('OK');
@@ -70,6 +72,42 @@ app.post('/api/speech', upload.single('audio'), async (req: Request, res: Respon
   } catch (error) {
     console.error('Error with OpenAI API:', error);
     res.status(500).send('Error processing audio.');
+  }
+});
+
+app.post('/api/chat', async (req: Request, res: Response) => {
+  const { newMessage, history, contextDocument } = req.body;
+
+  if (!newMessage || !history || !contextDocument) {
+    return res.status(400).send('Missing required fields.');
+  }
+
+  try {
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a discussion partner. Your goal is to facilitate a deep and thoughtful conversation. You have the following research document as context:\n\n${contextDocument}`
+      },
+      ...history,
+      newMessage
+    ];
+
+    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'gpt-4o',
+      messages: messages
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const aiResponse = response.data.choices[0].message.content;
+    res.status(200).json({ response: aiResponse });
+
+  } catch (error) {
+    console.error('Error with OpenAI API:', error);
+    res.status(500).send('Error processing chat message.');
   }
 });
 
