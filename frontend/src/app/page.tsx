@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
-  const [serverResponse, setServerResponse] = useState(null);
+  const [serverResponse, setServerResponse] = useState<{ markdown: string } | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -53,7 +55,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
       <h1 className="text-4xl font-bold mb-8">Voice Discussion PoC</h1>
       <div className="space-x-4">
         <button
@@ -71,10 +73,14 @@ export default function Home() {
           Stop Recording
         </button>
       </div>
-      {serverResponse && (
-        <div className="mt-8 p-4 bg-white rounded-md shadow-md">
-          <h2 className="text-2xl font-semibold">Server Response:</h2>
-          <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify(serverResponse, null, 2)}</pre>
+      {serverResponse && serverResponse.markdown && (
+        <div className="mt-8 p-6 bg-white rounded-md shadow-md w-full max-w-4xl">
+          <h2 className="text-2xl font-semibold mb-4">Investigation Results:</h2>
+          <article className="prose lg:prose-xl">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {serverResponse.markdown}
+            </ReactMarkdown>
+          </article>
         </div>
       )}
     </div>
